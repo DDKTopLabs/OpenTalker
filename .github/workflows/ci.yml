@@ -42,7 +42,7 @@ jobs:
         run: |
           uv venv
           source .venv/bin/activate
-          uv pip install -e ".[dev]"
+          uv pip install -e ".[dev]" --index-strategy unsafe-best-match
 
       - name: Run ruff (linting)
         run: |
@@ -80,7 +80,7 @@ jobs:
       - name: Install uv
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Cache uv dependencies
         uses: actions/cache@v4

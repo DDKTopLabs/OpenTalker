@@ -51,7 +51,7 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
 # Install uv package manager
 # ============================================
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:${PATH}"
+ENV PATH="/root/.local/bin:${PATH}"
 
 # ============================================
 # Set working directory
@@ -68,7 +68,7 @@ COPY .python-version .
 # Install Python dependencies using uv
 # Mirror sources are configured in pyproject.toml
 # ============================================
-RUN uv pip install --system --no-cache -e .
+RUN /root/.local/bin/uv pip install --system --no-cache --index-strategy unsafe-best-match -e .
 
 # ============================================
 # Copy application code
