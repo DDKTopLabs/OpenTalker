@@ -1,0 +1,137 @@
+# ============================================
+# OpenTalker - Docker Compose
+# GPU-accelerated deployment for GTX 1050 Ti
+# ============================================
+
+version: '3.8'
+
+services:
+  audio-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    
+    image: opentalker:latest
+    container_name: opentalker
+    
+    # ============================================
+    # GPU Configuration - NVIDIA Runtime
+    # ============================================
+    runtime: nvidia
+    
+    # ============================================
+    # Port Mapping
+    # ============================================
+    ports:
+      - "8000:8000"
+    
+    # ============================================
+    # Volume Mounts
+    # ============================================
+    volumes:
+      # Model cache directory (persistent)
+      - ./models:/models
+      # Temporary files (ephemeral)
+      - ./tmp:/app/tmp
+      # Optional: mount .env file
+      - ./.env:/app/.env:ro
+    
+    # ============================================
+    # Environment Variables
+    # ============================================
+    environment:
+      # NVIDIA GPU
+      - NVIDIA_VISIBLE_DEVICES=0
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      
+      # HuggingFace Mirror
+      - HF_ENDPOINT=https://hf-mirror.com
+      - HUGGINGFACE_HUB_CACHE=/models/.cache/huggingface
+      
+      # STT Configuration - Qwen3-ASR
+      - QWEN_ASR_MODEL=Qwen/Qwen3-ASR-0.6B
+      - QWEN_ASR_BACKEND=transformers
+      - QWEN_ASR_DTYPE=float16
+      - QWEN_ASR_DEVICE=cuda:0
+      - QWEN_ASR_ENABLE_ALIGNER=auto
+      - QWEN_ASR_MAX_BATCH_SIZE=8
+      
+      # TTS Configuration - IndexTTS2
+      - INDEXTTS_MODEL_DIR=/models/indextts
+      - INDEXTTS_USE_FP16=true
+      - INDEXTTS_USE_CUDA_KERNEL=false
+      - INDEXTTS_USE_DEEPSPEED=false
+      
+      # Service Configuration
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - LOG_LEVEL=INFO
+      - MAX_UPLOAD_SIZE=52428800
+      
+      # GPU Configuration
+      - CUDA_VISIBLE_DEVICES=0
+      
+      # Model Management
+      - MODEL_SWITCH_TIMEOUT=30
+      - ENABLE_MODEL_PRELOAD=false
+      - DEFAULT_PRELOAD_MODEL=none
+    
+    # ============================================
+    # Resource Limits and GPU Allocation
+    # ============================================
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 4G
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    
+    # ============================================
+    # Restart Policy
+    # ============================================
+    restart: unless-stopped
+    
+    # ============================================
+    # Health Check
+    # ============================================
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    # ============================================
+    # Logging
+    # ============================================
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # ============================================
+    # Network
+    # ============================================
+    networks:
+      - audio-api-network
+
+# ============================================
+# Networks
+# ============================================
+networks:
+  audio-api-network:
+    driver: bridge
+
+# ============================================
+# Volumes (optional named volumes)
+# ============================================
+volumes:
+  models:
+    driver: local
+  tmp:
+    driver: local

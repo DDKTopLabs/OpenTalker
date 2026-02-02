@@ -1,0 +1,141 @@
+# ============================================
+# 项目基本信息
+# ============================================
+[project]
+name = "opentalker"
+version = "0.1.0"
+description = "OpenAI-compatible API server for Qwen3-ASR and IndexTTS2 (GTX 1050 Ti optimized, China mirrors)"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "DDKTopLabs", email = "contact@ddktop.com" }
+]
+keywords = ["speech-recognition", "text-to-speech", "qwen", "indextts", "openai-api"]
+
+# ============================================
+# 项目依赖
+# ============================================
+dependencies = [
+    # Web 框架
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "python-multipart>=0.0.6",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    
+    # 深度学习框架（将从 PyTorch 清华镜像安装）
+    "torch>=2.1.0",
+    "torchaudio>=2.1.0",
+    "transformers>=4.40.0",
+    
+    # STT (Qwen3-ASR)
+    "qwen-asr>=0.1.0",
+    
+    # TTS (IndexTTS2) 依赖
+    "sentencepiece>=0.1.99",
+    "librosa>=0.10.0",
+    "soundfile>=0.12.0",
+    "scipy>=1.10.0",
+    "numpy>=1.24.0,<2.0.0",
+    
+    # 音频处理
+    "ffmpeg-python>=0.2.0",
+    
+    # 工具
+    "tqdm>=4.65.0",
+    "python-dotenv>=1.0.0",
+    "requests>=2.31.0",
+]
+
+# 开发依赖
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "httpx>=0.25.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.5.0",
+]
+
+# ============================================
+# 构建系统
+# ============================================
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# ============================================
+# uv 包源配置（关键！）
+# ============================================
+
+# 🔥 将 PyTorch 相关包固定到清华 PyTorch 镜像
+[tool.uv.sources]
+torch = { index = "tsinghua-pytorch" }
+torchaudio = { index = "tsinghua-pytorch" }
+torchvision = { index = "tsinghua-pytorch" }
+
+# ============================================
+# uv 索引配置
+# ============================================
+
+# 索引 1：清华 PyPI 镜像（默认索引，最低优先级）
+[[tool.uv.index]]
+name = "tsinghua-pypi"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
+
+# 索引 2：清华 PyTorch 镜像（显式索引，仅用于固定的包）
+[[tool.uv.index]]
+name = "tsinghua-pytorch"
+url = "https://mirrors.tuna.tsinghua.edu.cn/pytorch/whl/cu121"
+explicit = true
+
+# 索引 3：备用官方 PyPI（容错）
+[[tool.uv.index]]
+name = "pypi-official"
+url = "https://pypi.org/simple"
+
+# 索引 4：备用官方 PyTorch（容错）
+[[tool.uv.index]]
+name = "pytorch-official"
+url = "https://download.pytorch.org/whl/cu121"
+explicit = true
+
+# ============================================
+# 代码质量工具配置
+# ============================================
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+select = ["E", "F", "I", "N", "W"]
+ignore = ["E501"]
+
+[tool.black]
+line-length = 100
+target-version = ['py310', 'py311', 'py312']
+include = '\.pyi?$'
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --cov=app --cov-report=term-missing"
+markers = [
+    "gpu: marks tests as requiring GPU (deselect with '-m \"not gpu\"')",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "venv"]
+skips = ["B101", "B601"]
