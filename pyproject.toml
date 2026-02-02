@@ -30,7 +30,7 @@ dependencies = [
     "transformers>=4.40.0",
     
     # STT (Qwen3-ASR)
-    "qwen-asr>=0.1.0",
+    "qwen-asr>=0.0.6",
     
     # TTS (IndexTTS2) 依赖
     "sentencepiece>=0.1.99",
@@ -66,6 +66,10 @@ dev = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+# 配置 hatchling 找到 app 目录
+[tool.hatch.build.targets.wheel]
+packages = ["app", "scripts"]
 
 # ============================================
 # uv 包源配置（关键！）
