@@ -66,13 +66,30 @@ COPY .python-version .
 
 # ============================================
 # Install Python dependencies using uv
-# Install PyTorch first from official index, then other dependencies
+# Strategy: Install PyTorch first, then install dependencies from pyproject.toml
+# but override the index URLs to use official sources for CI reliability
 # ============================================
 RUN /root/.local/bin/uv pip install --system --no-cache \
     torch>=2.1.0 torchaudio>=2.1.0 \
     --index-url https://download.pytorch.org/whl/cu121 && \
     /root/.local/bin/uv pip install --system --no-cache \
-    --index-strategy unsafe-best-match -e .
+    fastapi>=0.109.0 \
+    uvicorn[standard]>=0.27.0 \
+    python-multipart>=0.0.6 \
+    pydantic>=2.5.0 \
+    pydantic-settings>=2.1.0 \
+    transformers>=4.40.0 \
+    qwen-asr>=0.0.6 \
+    sentencepiece>=0.1.99 \
+    librosa>=0.10.0 \
+    soundfile>=0.12.0 \
+    scipy>=1.10.0 \
+    "numpy>=1.24.0,<2.0.0" \
+    ffmpeg-python>=0.2.0 \
+    tqdm>=4.65.0 \
+    python-dotenv>=1.0.0 \
+    requests>=2.31.0 \
+    --index-url https://pypi.org/simple
 
 # ============================================
 # Copy application code

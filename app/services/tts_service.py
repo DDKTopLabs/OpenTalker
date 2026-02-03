@@ -313,8 +313,9 @@ class IndexTTSService:
             Audio bytes in requested format
         """
         try:
-            import soundfile as sf
             import io
+
+            import soundfile as sf
 
             # Convert to numpy array if tensor
             if isinstance(audio_data, torch.Tensor):

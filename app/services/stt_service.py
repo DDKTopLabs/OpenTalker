@@ -133,7 +133,7 @@ class QwenASRService:
                 )
 
             # Validate and convert audio format if needed
-            from app.utils.audio_utils import validate_audio, convert_to_wav
+            from app.utils.audio_utils import convert_to_wav, validate_audio
 
             if not validate_audio(audio_path):
                 logger.info("Converting audio to WAV format")
