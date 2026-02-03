@@ -51,13 +51,18 @@ class QwenASRService:
                 )
 
             # Load model using from_pretrained
+            # Note: qwen-asr 0.0.6 API requires pretrained_model_name_or_path as first positional arg
+            # and does not support backend, dtype, device parameters
+            # forced_aligner is disabled (None) to avoid downloading additional models
             self.model = qwen_asr.Qwen3ASRModel.from_pretrained(
-                model_name=self.model_name,
-                backend=self.backend,
-                dtype=self.dtype,
-                device=self.device,
-                enable_aligner=(self.enable_aligner == "auto" or self.enable_aligner == "true"),
+                self.model_name,
+                forced_aligner=None,
+                max_inference_batch_size=self.max_batch_size,
             )
+
+            # Move model to device after initialization
+            if hasattr(self.model, "model"):
+                self.model.model = self.model.model.to(self.device)
 
             self._is_loaded = True
             logger.info("Qwen3-ASR model loaded successfully")
@@ -142,11 +147,31 @@ class QwenASRService:
             logger.info(f"Transcribing audio: {audio_path}")
 
             # Perform transcription
+            # Note: qwen-asr 0.0.6 transcribe() only accepts audio, context, language, and return_time_stamps parameters
+            # If language is not specified, default to "Chinese" for better results
+            transcribe_language = language if language else "Chinese"
+
             result = self.model.transcribe(
                 audio=audio_path,
-                language=language,
-                temperature=temperature,
+                language=transcribe_language,
             )
+
+            # qwen-asr 0.0.6 returns a list of ASRTranscription objects
+            if isinstance(result, list):
+                # Extract text from ASRTranscription objects
+                text_parts = []
+                for item in result:
+                    if hasattr(item, "text"):
+                        text_parts.append(item.text)
+                    elif isinstance(item, dict):
+                        text_parts.append(item.get("text", ""))
+                    else:
+                        text_parts.append(str(item))
+                text = " ".join(text_parts)
+                result = {"text": text}
+            elif hasattr(result, "text"):
+                # Single ASRTranscription object
+                result = {"text": result.text}
 
             # Process result based on response format
             if response_format == "text":
