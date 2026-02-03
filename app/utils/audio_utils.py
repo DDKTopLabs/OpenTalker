@@ -4,12 +4,11 @@ Handles format detection, conversion, validation, and subtitle generation
 """
 
 import base64
-import io
 import logging
 import os
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

@@ -8,7 +8,7 @@ import logging
 import os
 import tempfile
 import time
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import (
     APIRouter,
@@ -18,17 +18,11 @@ from fastapi import (
     UploadFile,
     status,
 )
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import Response
 
 from app.config import settings
 from app.core.model_manager import model_manager
-from app.models import (
-    ErrorResponse,
-    TimestampGranularity,
-    TranscriptionResponseFormat,
-    TTSRequest,
-    TTSResponseFormat,
-)
+from app.models import TTSRequest
 from app.utils import openai_compat
 
 logger = logging.getLogger(__name__)

@@ -5,7 +5,6 @@ Handles audio transcription using Qwen3-ASR-0.6B model
 
 import logging
 import os
-from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 import torch

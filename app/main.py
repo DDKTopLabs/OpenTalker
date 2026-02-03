@@ -4,12 +4,14 @@ FastAPI application initialization and configuration
 
 import logging
 import os
+import sys
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
+from app.routers import audio, health
 
 # Configure logging
 logging.basicConfig(
@@ -28,7 +30,6 @@ async def lifespan(app: FastAPI):
     """
     # Startup
     logger.info("Starting OpenAI-compatible Audio API Server")
-    import sys
 
     logger.info(f"Python version: {sys.version}")
     logger.info(f"CUDA visible devices: {settings.cuda_visible_devices}")
@@ -73,8 +74,6 @@ app.add_middleware(
 )
 
 # Register routers
-from app.routers import audio, health
-
 app.include_router(audio.router, prefix="/v1/audio", tags=["audio"])
 app.include_router(health.router, tags=["health"])
 

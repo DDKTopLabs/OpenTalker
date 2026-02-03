@@ -66,9 +66,13 @@ COPY .python-version .
 
 # ============================================
 # Install Python dependencies using uv
-# Mirror sources are configured in pyproject.toml
+# Install PyTorch first from official index, then other dependencies
 # ============================================
-RUN /root/.local/bin/uv pip install --system --no-cache --index-strategy unsafe-best-match -e .
+RUN /root/.local/bin/uv pip install --system --no-cache \
+    torch>=2.1.0 torchaudio>=2.1.0 \
+    --index-url https://download.pytorch.org/whl/cu121 && \
+    /root/.local/bin/uv pip install --system --no-cache \
+    --index-strategy unsafe-best-match -e .
 
 # ============================================
 # Copy application code
