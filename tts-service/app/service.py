@@ -143,12 +143,15 @@ class Qwen3TTSService:
             )
 
             # Generate speech
-            # Qwen3-TTS returns audio as numpy array with sample rate
-            audio_data, sample_rate = self.model.generate_custom_voice(
+            # Qwen3-TTS returns (wavs_list, sample_rate) where wavs_list is a list of numpy arrays
+            wavs, sample_rate = self.model.generate_custom_voice(
                 text=text,
                 speaker=speaker,
                 language=language,
             )
+
+            # Get the first audio from the list
+            audio_data = wavs[0] if isinstance(wavs, list) else wavs
 
             # Apply speed adjustment if needed
             if speed != 1.0:
