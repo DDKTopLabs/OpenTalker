@@ -25,7 +25,7 @@ class Settings(BaseSettings):
         default="Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice",
         description="Qwen3-TTS model name or path",
     )
-    qwen_tts_device: str = Field(default="cpu", description="Device (cpu/cuda:0)")
+    qwen_tts_device: str = Field(default="cuda:0", description="Device (cpu/cuda:0)")
     qwen_tts_speaker: str = Field(default="female_calm", description="Default speaker")
 
     # HuggingFace

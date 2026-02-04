@@ -22,10 +22,10 @@ class Settings(BaseSettings):
 
     # Qwen3-ASR Model
     qwen_asr_model: str = Field(
-        default="./models/qwen3-asr",
+        default="Qwen/Qwen3-ASR-0.6B",
         description="Qwen3-ASR model path or HF model ID",
     )
-    qwen_asr_device: str = Field(default="cpu", description="Device (cpu/cuda:0)")
+    qwen_asr_device: str = Field(default="cuda:0", description="Device (cpu/cuda:0)")
     qwen_asr_max_batch_size: int = Field(default=8, description="Max batch size")
 
     # File Upload
