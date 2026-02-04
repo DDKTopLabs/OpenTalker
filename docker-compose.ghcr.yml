@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  # API Gateway
+  gateway:
+    image: ghcr.io/ddktoplabs/opentalker-gateway:v0.3.0
+    container_name: opentalker-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - GATEWAY_HOST=0.0.0.0
+      - GATEWAY_PORT=8000
+      - LOG_LEVEL=INFO
+      - STT_SERVICE_URL=http://stt-service:8001
+      - TTS_SERVICE_URL=http://tts-service:8002
+      - STT_TIMEOUT=120
+      - TTS_TIMEOUT=180
+    depends_on:
+      - stt-service
+      - tts-service
+    networks:
+      - opentalker-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # STT Service (Qwen3-ASR)
+  stt-service:
+    image: ghcr.io/ddktoplabs/opentalker-stt:v0.3.0
+    container_name: opentalker-stt
+    ports:
+      - "8001:8001"
+    environment:
+      - SERVICE_HOST=0.0.0.0
+      - SERVICE_PORT=8001
+      - LOG_LEVEL=INFO
+      - QWEN_ASR_MODEL=Qwen/Qwen3-ASR-0.6B
+      - QWEN_ASR_DEVICE=cuda:0
+      - QWEN_ASR_MAX_BATCH_SIZE=8
+      - MAX_UPLOAD_SIZE=52428800
+      - HF_ENDPOINT=https://hf-mirror.com
+    volumes:
+      - ./models:/models
+      - ./stt-service/tmp:/app/tmp
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - opentalker-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # TTS Service (Qwen3-TTS)
+  tts-service:
+    image: ghcr.io/ddktoplabs/opentalker-tts:v0.3.0
+    container_name: opentalker-tts
+    ports:
+      - "8002:8002"
+    environment:
+      - SERVICE_HOST=0.0.0.0
+      - SERVICE_PORT=8002
+      - LOG_LEVEL=INFO
+      - QWEN_TTS_MODEL=Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice
+      - QWEN_TTS_DEVICE=cuda:0
+      - HF_ENDPOINT=https://hf-mirror.com
+    volumes:
+      - ./models:/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - opentalker-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  opentalker-network:
+    driver: bridge
