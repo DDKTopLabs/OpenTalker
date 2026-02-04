@@ -50,15 +50,15 @@ name = "tsinghua-pypi"
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 default = true
 
-# PyTorch 镜像（清华大学 - CPU 版本，适用于 Mac）
+# PyTorch 镜像（官方 - CUDA 12.1 版本，适用于 GPU）
 [[tool.uv.index]]
-name = "tsinghua-pytorch"
-url = "https://mirrors.tuna.tsinghua.edu.cn/pytorch/whl/cpu"
+name = "pytorch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
 explicit = true
 
 [tool.uv.sources]
-torch = { index = "tsinghua-pytorch" }
-torchaudio = { index = "tsinghua-pytorch" }
+torch = { index = "pytorch-cu121" }
+torchaudio = { index = "pytorch-cu121" }
 
 [tool.ruff]
 line-length = 100
