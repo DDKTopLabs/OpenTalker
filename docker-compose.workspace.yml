@@ -36,19 +36,26 @@ services:
       - SERVICE_HOST=0.0.0.0
       - SERVICE_PORT=8001
       - LOG_LEVEL=INFO
-      - QWEN_ASR_MODEL=/models/qwen3-asr
-      - QWEN_ASR_DEVICE=cpu
+      - QWEN_ASR_MODEL=Qwen/Qwen3-ASR-0.6B
+      - QWEN_ASR_DEVICE=cuda:0
       - QWEN_ASR_MAX_BATCH_SIZE=8
       - MAX_UPLOAD_SIZE=52428800
       - HF_ENDPOINT=https://hf-mirror.com
     volumes:
       - ./models:/models
       - ./stt-service/tmp:/app/tmp
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     networks:
       - opentalker-network
     restart: unless-stopped
 
-  # TTS Service (IndexTTS2)
+  # TTS Service (Qwen3-TTS)
   tts-service:
     build:
       context: ./tts-service
@@ -60,12 +67,18 @@ services:
       - SERVICE_HOST=0.0.0.0
       - SERVICE_PORT=8002
       - LOG_LEVEL=INFO
-      - INDEXTTS_MODEL_DIR=/models/indextts
-      - INDEXTTS_DEVICE=cpu
-      - INDEXTTS_USE_FP16=true
+      - QWEN_TTS_MODEL=Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice
+      - QWEN_TTS_DEVICE=cuda:0
       - HF_ENDPOINT=https://hf-mirror.com
     volumes:
       - ./models:/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     networks:
       - opentalker-network
     restart: unless-stopped
