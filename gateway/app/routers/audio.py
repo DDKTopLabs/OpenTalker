@@ -124,11 +124,41 @@ async def create_speech(request: TTSRequest):
             f"format={request.response_format}, text_length={len(request.input)}"
         )
 
+        # Map OpenAI-style request to TTS service format
+        # Language detection: auto-detect from voice name or text
+        language = None
+        speaker = request.voice
+
+        # Map common voice names to language codes
+        chinese_speakers = ["vivian", "serena", "uncle_fu", "dylan", "eric"]
+        english_speakers = ["ryan", "aiden"]
+        japanese_speakers = ["ono_anna"]
+        korean_speakers = ["sohee"]
+
+        if speaker.lower() in chinese_speakers:
+            language = "zh"
+        elif speaker.lower() in english_speakers:
+            language = "en"
+        elif speaker.lower() in japanese_speakers:
+            language = "ja"
+        elif speaker.lower() in korean_speakers:
+            language = "ko"
+        # If not matched, let TTS service auto-detect
+
+        # Prepare TTS service request
+        tts_request = {
+            "input": request.input,
+            "speaker": speaker,
+            "language": language,
+            "response_format": request.response_format,
+            "speed": request.speed,
+        }
+
         # Forward to TTS service
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{settings.tts_service_url}/synthesize",
-                json=request.model_dump(),
+                json=tts_request,
                 timeout=settings.tts_timeout,
             )
 

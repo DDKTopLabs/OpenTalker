@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="OpenTalker API Gateway",
     description="OpenAI-compatible Audio API - STT & TTS Services",
-    version="0.2.0",
+    version="0.3.0",
 )
 
 # Add CORS middleware
