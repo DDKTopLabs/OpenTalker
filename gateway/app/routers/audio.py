@@ -129,20 +129,20 @@ async def create_speech(request: TTSRequest):
         language = None
         speaker = request.voice
 
-        # Map common voice names to language codes
+        # Map common voice names to language names (TTS service expects full names)
         chinese_speakers = ["vivian", "serena", "uncle_fu", "dylan", "eric"]
         english_speakers = ["ryan", "aiden"]
         japanese_speakers = ["ono_anna"]
         korean_speakers = ["sohee"]
 
         if speaker.lower() in chinese_speakers:
-            language = "zh"
+            language = "Chinese"
         elif speaker.lower() in english_speakers:
-            language = "en"
+            language = "English"
         elif speaker.lower() in japanese_speakers:
-            language = "ja"
+            language = "Japanese"
         elif speaker.lower() in korean_speakers:
-            language = "ko"
+            language = "Korean"
         # If not matched, let TTS service auto-detect
 
         # Prepare TTS service request
