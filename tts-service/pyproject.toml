@@ -47,10 +47,10 @@ name = "tsinghua-pypi"
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 default = true
 
-# PyTorch 镜像（清华大学 - CUDA 12.1）
+# PyTorch 镜像（清华大学 - CPU 版本，适用于 Mac）
 [[tool.uv.index]]
 name = "tsinghua-pytorch"
-url = "https://mirrors.tuna.tsinghua.edu.cn/pytorch/whl/cu121"
+url = "https://mirrors.tuna.tsinghua.edu.cn/pytorch/whl/cpu"
 explicit = true
 
 [tool.uv.sources]
