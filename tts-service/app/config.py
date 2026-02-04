@@ -20,13 +20,13 @@ class Settings(BaseSettings):
     service_port: int = Field(default=8002, description="Service port")
     log_level: str = Field(default="INFO", description="Log level")
 
-    # IndexTTS2 Model
-    indextts_model_dir: str = Field(
-        default="./models/indextts",
-        description="IndexTTS2 model directory",
+    # Qwen3-TTS Model
+    qwen_tts_model: str = Field(
+        default="Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice",
+        description="Qwen3-TTS model name or path",
     )
-    indextts_device: str = Field(default="cpu", description="Device (cpu/cuda:0)")
-    indextts_use_fp16: bool = Field(default=True, description="Use FP16 precision")
+    qwen_tts_device: str = Field(default="cpu", description="Device (cpu/cuda:0)")
+    qwen_tts_speaker: str = Field(default="female_calm", description="Default speaker")
 
     # HuggingFace
     hf_endpoint: str = Field(

@@ -1,7 +1,7 @@
 [project]
 name = "opentalker-tts"
-version = "0.2.0"
-description = "OpenTalker TTS Service - IndexTTS2 Text-to-Speech"
+version = "0.3.0"
+description = "OpenTalker TTS Service - Qwen3-TTS Text-to-Speech"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 dependencies = [
@@ -10,12 +10,10 @@ dependencies = [
     "python-multipart>=0.0.12",
     "pydantic>=2.9.0",
     "pydantic-settings>=2.6.0",
-    "indextts>=2.0.0",
-    "transformers>=4.46.0,<4.57.0",
+    "qwen-tts>=0.1.0",
     "torch>=2.1.0",
     "torchaudio>=2.1.0",
     "numpy<2.0.0",
-    "librosa>=0.10.0",
     "soundfile>=0.12.0",
 ]
 

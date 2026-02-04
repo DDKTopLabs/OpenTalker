@@ -1,10 +1,9 @@
 """
 TTS Service - FastAPI Application
-IndexTTS2 Text-to-Speech Service
+Qwen3-TTS Text-to-Speech Service
 """
 
 import asyncio
-import base64
 import logging
 import os
 import time
@@ -15,7 +14,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from app.config import settings
-from app.service import IndexTTSService
+from app.service import Qwen3TTSService
 
 # Configure logging
 logging.basicConfig(
@@ -27,40 +26,30 @@ logger = logging.getLogger(__name__)
 # Create FastAPI app
 app = FastAPI(
     title="OpenTalker TTS Service",
-    description="IndexTTS2 Text-to-Speech Service",
-    version="0.2.0",
+    description="Qwen3-TTS Text-to-Speech Service",
+    version="0.3.0",
 )
 
 # Initialize TTS service
-tts_service = IndexTTSService()
-
-
-class EmotionConfig(BaseModel):
-    """Emotion configuration"""
-
-    mode: str = Field(default="auto", description="Emotion mode")
-    alpha: float = Field(default=1.0, description="Emotion strength")
-    audio: Optional[str] = Field(default=None, description="Emotion reference audio (base64)")
-    vector: Optional[list] = Field(default=None, description="Emotion vector")
-    text: Optional[str] = Field(default=None, description="Emotion text description")
+tts_service = Qwen3TTSService()
 
 
 class TTSRequest(BaseModel):
     """TTS request model"""
 
     input: str = Field(..., description="Text to synthesize", min_length=1, max_length=4096)
-    voice: str = Field(..., description="Voice reference audio (base64)")
+    speaker: Optional[str] = Field(default=None, description="Speaker name")
+    language: Optional[str] = Field(default=None, description="Language code (zh/en/ja/ko/etc)")
     response_format: str = Field(default="wav", description="Audio format")
     speed: float = Field(default=1.0, description="Speech speed", ge=0.25, le=4.0)
-    emotion: Optional[EmotionConfig] = Field(default=None, description="Emotion config")
 
 
 @app.on_event("startup")
 async def startup_event():
     """Startup event - load model"""
     logger.info("Starting TTS Service")
-    logger.info(f"Model: {settings.indextts_model_dir}")
-    logger.info(f"Device: {settings.indextts_device}")
+    logger.info(f"Model: {settings.qwen_tts_model}")
+    logger.info(f"Device: {settings.qwen_tts_device}")
     logger.info(f"HF Endpoint: {settings.hf_endpoint}")
 
     # Set HuggingFace endpoint
@@ -68,7 +57,7 @@ async def startup_event():
 
     # Load model
     try:
-        logger.info("Loading IndexTTS2 model...")
+        logger.info("Loading Qwen3-TTS model...")
         tts_service.load_model()
         logger.info("✅ Model loaded successfully")
     except Exception as e:
@@ -81,8 +70,8 @@ async def health_check():
     return {
         "status": "healthy" if tts_service.is_loaded else "loading",
         "service": "tts",
-        "model": settings.indextts_model_dir,
-        "device": settings.indextts_device,
+        "model": settings.qwen_tts_model,
+        "device": settings.qwen_tts_device,
         "model_loaded": tts_service.is_loaded,
     }
 
@@ -93,7 +82,7 @@ async def synthesize(request: TTSRequest):
     Synthesize speech from text
 
     Args:
-        request: TTS request with text, voice, and options
+        request: TTS request with text, speaker, and options
 
     Returns:
         Audio file in requested format
@@ -104,39 +93,16 @@ async def synthesize(request: TTSRequest):
             f"text_length={len(request.input)}, speed={request.speed}"
         )
 
-        # Decode voice reference
-        try:
-            voice_bytes = base64.b64decode(request.voice)
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid voice data: {e}",
-            )
-
-        # Process emotion config
-        emotion_config = None
-        if request.emotion:
-            emotion_config = {
-                "mode": request.emotion.mode,
-                "alpha": request.emotion.alpha,
-            }
-            if request.emotion.audio:
-                emotion_config["audio"] = request.emotion.audio
-            if request.emotion.vector:
-                emotion_config["vector"] = request.emotion.vector
-            if request.emotion.text:
-                emotion_config["text"] = request.emotion.text
-
         # Perform synthesis
         start_time = time.time()
 
         audio_bytes = await asyncio.to_thread(
             tts_service.synthesize,
             text=request.input,
-            voice_reference=request.voice,
+            speaker=request.speaker,
+            language=request.language,
             response_format=request.response_format,
             speed=request.speed,
-            emotion_config=emotion_config,
         )
 
         elapsed = time.time() - start_time

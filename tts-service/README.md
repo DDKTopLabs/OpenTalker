@@ -1,14 +1,14 @@
 # OpenTalker TTS Service
 
-IndexTTS2 文字转语音服务
+Qwen3-TTS 文字转语音服务
 
 ## 特性
 
 - ✅ 独立的 TTS 服务
-- ✅ 使用 indextts 2.0.0
-- ✅ transformers 4.46.x - 4.56.x
-- ✅ 支持语音克隆
-- ✅ 支持情感控制
+- ✅ 使用 Qwen3-TTS (0.6B/1.7B)
+- ✅ 支持 10 种语言
+- ✅ 支持多种音色
+- ✅ 支持语速控制
 
 ## 快速开始
 
@@ -17,7 +17,7 @@ IndexTTS2 文字转语音服务
 cd tts-service
 uv venv
 source .venv/bin/activate  # Linux/Mac
-uv pip install -e .
+uv pip install fastapi uvicorn python-multipart pydantic pydantic-settings qwen-tts torch torchaudio "numpy<2.0.0" soundfile
 
 # 启动服务
 python -m app.main
@@ -37,28 +37,23 @@ uvicorn app.main:app --host 0.0.0.0 --port 8002
 ```json
 {
   "input": "要合成的文本",
-  "voice": "<base64_encoded_reference_audio>",
+  "speaker": "female_calm",
+  "language": "zh",
   "response_format": "wav",
-  "speed": 1.0,
-  "emotion": {
-    "mode": "auto",
-    "alpha": 1.0
-  }
+  "speed": 1.0
 }
 ```
 
 **示例：**
 
 ```bash
-VOICE_BASE64=$(base64 -i reference.wav)
-
 curl -X POST http://localhost:8002/synthesize \
   -H "Content-Type: application/json" \
-  -d "{
-    \"input\": \"你好世界\",
-    \"voice\": \"$VOICE_BASE64\",
-    \"response_format\": \"wav\"
-  }" \
+  -d '{
+    "input": "你好世界",
+    "speaker": "female_calm",
+    "language": "zh"
+  }' \
   --output output.wav
 ```
 
@@ -81,17 +76,35 @@ SERVICE_PORT=8002
 LOG_LEVEL=INFO
 
 # Model
-INDEXTTS_MODEL_DIR=./models/indextts
-INDEXTTS_DEVICE=cpu
-INDEXTTS_USE_FP16=true
+QWEN_TTS_MODEL=Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice
+QWEN_TTS_DEVICE=cpu
+QWEN_TTS_SPEAKER=female_calm
 
 # HuggingFace
 HF_ENDPOINT=https://hf-mirror.com
 ```
 
+## 支持的音色
+
+- female_calm - 女声平静
+- male_energetic - 男声活力
+- 等等（通过 API 查询完整列表）
+
+## 支持的语言
+
+- zh - 中文
+- en - 英语
+- ja - 日语
+- ko - 韩语
+- de - 德语
+- fr - 法语
+- ru - 俄语
+- pt - 葡萄牙语
+- es - 西班牙语
+- it - 意大利语
+
 ## 依赖版本
 
-- indextts: >= 2.0.0
-- transformers: >= 4.46.0, < 4.57.0
+- qwen-tts: >= 0.1.0
 - torch: >= 2.1.0
 - numpy: < 2.0.0
