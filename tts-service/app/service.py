@@ -51,7 +51,8 @@ class Qwen3TTSService:
             # Load model
             self.model = Qwen3TTSModel.from_pretrained(
                 self.model_name,
-                device=self.device,
+                device_map=self.device,
+                dtype=torch.bfloat16,
             )
 
             self._is_loaded = True
