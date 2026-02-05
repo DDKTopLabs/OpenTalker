@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     )
     qwen_asr_device: str = Field(default="cuda:0", description="Device (cpu/cuda:0)")
     qwen_asr_max_batch_size: int = Field(default=8, description="Max batch size")
+    qwen_asr_use_fp16: bool = Field(
+        default=True,
+        description="Use FP16 half precision for inference (reduces VRAM by ~50%)",
+    )
 
     # File Upload
     max_upload_size: int = Field(default=52428800, description="Max upload size (50MB)")

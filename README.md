@@ -32,6 +32,7 @@ OpenAI 兼容的音频处理 API 服务，支持语音转文字（STT）和文�
 - [镜像源配置](#镜像源配置)
 - [性能预期](#性能预期)
 - [故障排查](#故障排查)
+- [文档](#文档)
 - [许可证](#许可证)
 
 ## 🖥️ 硬件要求
@@ -829,6 +830,24 @@ curl -X POST "$API_BASE/v1/audio/speech" \
 
 echo "Done!"
 ```
+
+## 📚 文档
+
+### 完整文档
+
+查看 [docs/](docs/) 目录获取完整文档：
+
+- **[Docker 镜像使用指南](docs/DOCKER_IMAGES_GUIDE.md)** - 使用 GHCR 公开镜像快速部署（推荐）
+- **[Docker 部署指南](docs/DOCKER_GUIDE.md)** - 完整的 Docker 部署文档
+- **[微服务架构指南](docs/README.workspace.md)** - Gateway + STT + TTS 分离部署
+- **[镜像优化方案](docs/DOCKER_OPTIMIZATION.md)** - 减小镜像大小的优化策略
+- **[AI 开发助手指南](AGENTS.md)** - 为 AI 编码助手配置环境
+
+### 快速链接
+
+- **国内用户**: 使用 [ghcr.1ms.run 镜像源](docs/DOCKER_IMAGES_GUIDE.md#方法-2使用国内镜像源推荐) 加速下载
+- **微服务部署**: 查看 [微服务架构指南](docs/README.workspace.md)
+- **镜像优化**: 查看 [优化方案](docs/DOCKER_OPTIMIZATION.md) 减小 37% 镜像大小
 
 ## 🤝 贡献
 

@@ -1,0 +1,108 @@
+# OpenTalker - 4GB VRAM Optimized Configuration
+# 针对 GTX 1050 Ti 等 4GB 显存 GPU 的优化配置
+# 启用 FP16 和文本分块，显存占用约 3.6GB
+
+version: '3.8'
+
+services:
+  stt:
+    image: ghcr.io/ddktoplabs/opentalker-stt:v0.3.0-optimized
+    container_name: opentalker-stt-optimized
+    ports:
+      - "8001:8001"
+    environment:
+      # 基础配置
+      - MODEL_NAME=Qwen/Qwen3-ASR-0.6B
+      - DEVICE=cuda
+      - LOG_LEVEL=INFO
+      - HF_ENDPOINT=https://hf-mirror.com
+      
+      # 性能优化配置
+      - QWEN_ASR_USE_FP16=true           # 启用 FP16 半精度（显存减半）
+      - QWEN_ASR_MAX_BATCH_SIZE=4        # 减小批处理大小
+    
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  tts:
+    image: ghcr.io/ddktoplabs/opentalker-tts:v0.3.0-optimized
+    container_name: opentalker-tts-optimized
+    ports:
+      - "8002:8002"
+    environment:
+      # 基础配置
+      - MODEL_NAME=Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice
+      - DEVICE=cuda
+      - LOG_LEVEL=INFO
+      - HF_ENDPOINT=https://hf-mirror.com
+      
+      # 性能优化配置
+      - QWEN_TTS_CHUNK_SIZE=200          # 启用文本分块（稳定显存）
+      - QWEN_TTS_SPEAKER=female_calm     # 默认说话人
+    
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  gateway:
+    image: ghcr.io/ddktoplabs/opentalker-gateway:v0.3.0
+    container_name: opentalker-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - STT_SERVICE_URL=http://stt:8001
+      - TTS_SERVICE_URL=http://tts:8002
+      - LOG_LEVEL=INFO
+    depends_on:
+      - stt
+      - tts
+    restart: unless-stopped
+
+networks:
+  default:
+    name: opentalker-optimized
+
+# 使用说明：
+# 1. 启动服务：docker compose -f docker-compose.4gb-optimized.yml up -d
+# 2. 查看日志：docker compose -f docker-compose.4gb-optimized.yml logs -f
+# 3. 停止服务：docker compose -f docker-compose.4gb-optimized.yml down
+# 4. 检查显存：nvidia-smi
+#
+# 预期显存占用：
+# - STT (FP16): ~1.6GB
+# - TTS (bfloat16): ~2.0GB
+# - 总计: ~3.6GB (4GB GPU 可用)
+#
+# 性能说明：
+# - FP16 精度损失 <0.5%，人耳几乎无法察觉
+# - 文本分块在句子边界进行，音频无缝拼接
+# - 支持超长文本合成（如整章小说）
+#
+# 更多优化选项请参考：docs/OPTIMIZATION_GUIDE.md

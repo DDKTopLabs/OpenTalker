@@ -1,0 +1,53 @@
+# OpenTalker - TTS Only Deployment (4GB VRAM Compatible)
+# 仅部署 TTS 服务，适用于 4GB 显存的 GPU（如 GTX 1050 Ti）
+
+version: '3.8'
+
+services:
+  tts:
+    image: ghcr.io/ddktoplabs/opentalker-tts:v0.3.0-optimized
+    container_name: opentalker-tts
+    ports:
+      - "8002:8002"
+    environment:
+      # 模型配置
+      - MODEL_NAME=Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice
+      - DEVICE=cuda
+      - LOG_LEVEL=INFO
+      
+      # 中国用户加速（使用 HuggingFace 镜像）
+      - HF_ENDPOINT=https://hf-mirror.com
+      
+      # 可选：自定义模型缓存目录
+      # - HF_HOME=/models
+    
+    # GPU 配置
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    
+    # 可选：挂载模型缓存目录（避免重复下载）
+    # volumes:
+    #   - ./models:/models
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+# 使用说明：
+# 1. 启动服务：docker compose -f docker-compose.tts-only.yml up -d
+# 2. 查看日志：docker compose -f docker-compose.tts-only.yml logs -f
+# 3. 停止服务：docker compose -f docker-compose.tts-only.yml down
+# 4. 测试 API：curl http://localhost:8002/health
+#
+# 显存占用：约 2.2GB
+# 适用 GPU：GTX 1050 Ti (4GB) 及以上

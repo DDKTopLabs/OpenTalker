@@ -1,0 +1,70 @@
+# ============================================
+# OpenTalker STT Service - Optimized Dockerfile v2
+# Qwen3-ASR Speech-to-Text with GPU support
+# 使用 pyproject.toml 中配置的索引源（清华镜像）
+# ============================================
+
+# 使用更小的 base 镜像而不是 runtime
+FROM nvidia/cuda:12.1.0-base-ubuntu22.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    UV_HTTP_TIMEOUT=300
+
+# Install system dependencies (minimal set)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 \
+    python3.11-dev \
+    python3-pip \
+    ffmpeg \
+    libsndfile1 \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Set Python 3.11 as default
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1
+
+# Install uv package manager
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:${PATH}"
+
+# Set working directory
+WORKDIR /app
+
+# Copy dependency files and app code
+# 需要复制 app/ 目录，因为 pyproject.toml 中定义了 packages = ["app"]
+COPY pyproject.toml .
+COPY app/ ./app/
+
+# 使用 uv pip install -e . --system --no-cache
+# 这样会自动读取 pyproject.toml 中的：
+# 1. dependencies（依赖列表）
+# 2. [[tool.uv.index]]（索引配置，包括清华源）
+# 3. [tool.uv.sources]（特定包的索引，如 PyTorch）
+RUN /root/.local/bin/uv pip install --system --no-cache -e .
+
+# Create necessary directories
+RUN mkdir -p /app/tmp /models && chmod -R 777 /app/tmp /models
+
+# 清理不必要的文件以减小镜像大小
+RUN find /usr/local/lib/python3.11 -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true && \
+    find /usr/local/lib/python3.11 -type f -name "*.pyc" -delete && \
+    find /usr/local/lib/python3.11 -type f -name "*.pyo" -delete
+
+# Expose port
+EXPOSE 8001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8001/health || exit 1
+
+# Run application
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]

@@ -2,7 +2,8 @@
 
 ## 推送时间
 **开始时间**: 2026-02-04 21:05  
-**状态**: 进行中
+**最后更新**: 2026-02-04 22:00  
+**状态**: 部分完成
 
 ## 镜像列表
 
@@ -10,19 +11,22 @@
 - **镜像**: `ghcr.io/ddktoplabs/opentalker-gateway:latest`
 - **镜像**: `ghcr.io/ddktoplabs/opentalker-gateway:v0.3.0`
 - **大小**: 325MB
-- **状态**: ✅ 推送完成
+- **Digest**: `sha256:eb6ef88fbd92e5c31dce4b178987bf307728d2a026cae9dc6983f22bf735c409`
+- **状态**: ✅ 推送完成并验证
 
-### ⏳ STT Service (推送中)
+### ✅ STT Service (已完成)
 - **镜像**: `ghcr.io/ddktoplabs/opentalker-stt:latest`
 - **镜像**: `ghcr.io/ddktoplabs/opentalker-stt:v0.3.0`
 - **大小**: 5.55GB
-- **状态**: ⏳ 推送中
+- **Digest**: `sha256:dc092d78b82fa456a1c2f6b7fbc16662991b7a0ef001399f83fc9a9fb5755bff`
+- **状态**: ✅ 推送完成并验证
 
 ### ⏳ TTS Service (推送中)
 - **镜像**: `ghcr.io/ddktoplabs/opentalker-tts:latest`
 - **镜像**: `ghcr.io/ddktoplabs/opentalker-tts:v0.3.0`
 - **大小**: 5.49GB
-- **状态**: ⏳ 推送中
+- **状态**: ⏳ 正在推送 (PID: 7384)
+- **日志**: `/tmp/docker_push_tts_final.log`
 
 ## 检查推送状态
 

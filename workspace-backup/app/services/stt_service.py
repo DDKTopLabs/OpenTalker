@@ -23,9 +23,11 @@ class QwenASRService:
     def __init__(self):
         self.model = None
         self.model_name = settings.qwen_asr_model
+        self.backend = settings.qwen_asr_backend
+        self.dtype = settings.qwen_asr_dtype
         self.device = settings.qwen_asr_device
+        self.enable_aligner = settings.qwen_asr_enable_aligner
         self.max_batch_size = settings.qwen_asr_max_batch_size
-        self.use_fp16 = settings.qwen_asr_use_fp16
         self._is_loaded = False
 
     def load_model(self) -> None:
@@ -38,8 +40,7 @@ class QwenASRService:
 
         try:
             logger.info(f"Loading Qwen3-ASR model: {self.model_name}")
-            logger.info(f"Device: {self.device}")
-            logger.info(f"FP16 enabled: {self.use_fp16}")
+            logger.info(f"Backend: {self.backend}, dtype: {self.dtype}, device: {self.device}")
 
             # Import qwen_asr
             try:
@@ -62,12 +63,6 @@ class QwenASRService:
             # Move model to device after initialization
             if hasattr(self.model, "model"):
                 self.model.model = self.model.model.to(self.device)
-
-                # Apply FP16 optimization if enabled
-                if self.use_fp16 and self.device.startswith("cuda"):
-                    logger.info("Converting model to FP16 (half precision)")
-                    self.model.model = self.model.model.half()
-                    logger.info("FP16 conversion complete - VRAM usage reduced by ~50%")
 
             self._is_loaded = True
             logger.info("Qwen3-ASR model loaded successfully")
@@ -142,6 +137,13 @@ class QwenASRService:
                     f"({settings.max_upload_size} bytes)"
                 )
 
+            # Validate and convert audio format if needed
+            from app.utils.audio_utils import convert_to_wav, validate_audio
+
+            if not validate_audio(audio_path):
+                logger.info("Converting audio to WAV format")
+                audio_path = convert_to_wav(audio_path)
+
             logger.info(f"Transcribing audio: {audio_path}")
 
             # Perform transcription
@@ -179,17 +181,36 @@ class QwenASRService:
                 return {"text": result.get("text", "")}
 
             elif response_format == "verbose_json":
-                # Build verbose response
+                # Build verbose response with segments and words
                 response = {
                     "task": "transcribe",
-                    "language": language or "unknown",
+                    "language": result.get("language", language or "unknown"),
+                    "duration": result.get("duration", 0.0),
                     "text": result.get("text", ""),
                 }
+
+                # Add segments if available
+                if "segments" in result and timestamp_granularities:
+                    if "segment" in timestamp_granularities:
+                        response["segments"] = self._format_segments(result["segments"])
+                    if "word" in timestamp_granularities:
+                        response["words"] = self._extract_words(result["segments"])
+
                 return response
 
-            elif response_format in ["srt", "vtt"]:
-                # SRT/VTT not supported yet
-                return result.get("text", "")
+            elif response_format == "srt":
+                # Convert to SRT format
+                from app.utils.audio_utils import generate_srt
+
+                segments = result.get("segments", [])
+                return generate_srt(segments)
+
+            elif response_format == "vtt":
+                # Convert to VTT format
+                from app.utils.audio_utils import generate_vtt
+
+                segments = result.get("segments", [])
+                return generate_vtt(segments)
 
             else:
                 raise ValueError(f"Unsupported response format: {response_format}")
@@ -197,6 +218,45 @@ class QwenASRService:
         except Exception as e:
             logger.error(f"Transcription failed: {e}", exc_info=True)
             raise
+
+    def _format_segments(self, segments: List[Dict]) -> List[Dict]:
+        """
+        Format segments for verbose JSON response
+        """
+        formatted = []
+        for i, seg in enumerate(segments):
+            formatted.append(
+                {
+                    "id": i,
+                    "seek": seg.get("seek", 0),
+                    "start": seg.get("start", 0.0),
+                    "end": seg.get("end", 0.0),
+                    "text": seg.get("text", ""),
+                    "tokens": seg.get("tokens", []),
+                    "temperature": seg.get("temperature", 0.0),
+                    "avg_logprob": seg.get("avg_logprob", 0.0),
+                    "compression_ratio": seg.get("compression_ratio", 0.0),
+                    "no_speech_prob": seg.get("no_speech_prob", 0.0),
+                }
+            )
+        return formatted
+
+    def _extract_words(self, segments: List[Dict]) -> List[Dict]:
+        """
+        Extract word-level timestamps from segments
+        """
+        words = []
+        for seg in segments:
+            if "words" in seg:
+                for word in seg["words"]:
+                    words.append(
+                        {
+                            "word": word.get("word", ""),
+                            "start": word.get("start", 0.0),
+                            "end": word.get("end", 0.0),
+                        }
+                    )
+        return words
 
     @property
     def is_loaded(self) -> bool:

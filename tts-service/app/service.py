@@ -5,8 +5,10 @@ Handles speech synthesis using Qwen3-TTS models
 
 import io
 import logging
-from typing import Optional
+import re
+from typing import List, Optional
 
+import numpy as np
 import soundfile as sf
 import torch
 
@@ -26,6 +28,7 @@ class Qwen3TTSService:
         self.model_name = settings.qwen_tts_model
         self.device = settings.qwen_tts_device
         self.default_speaker = settings.qwen_tts_speaker
+        self.chunk_size = settings.qwen_tts_chunk_size
         self._is_loaded = False
 
     def load_model(self) -> None:
@@ -100,6 +103,51 @@ class Qwen3TTSService:
             logger.error(f"Failed to unload Qwen3-TTS model: {e}", exc_info=True)
             raise
 
+    def _split_text_into_chunks(self, text: str, max_chunk_size: int) -> List[str]:
+        """
+        Split long text into smaller chunks at sentence boundaries
+
+        Args:
+            text: Input text to split
+            max_chunk_size: Maximum characters per chunk
+
+        Returns:
+            List of text chunks
+        """
+        if len(text) <= max_chunk_size:
+            return [text]
+
+        # Split by common sentence delimiters (Chinese and English)
+        # 按中英文标点符号分句
+        sentence_delimiters = r"([。！？；.!?;])"
+        sentences = re.split(sentence_delimiters, text)
+
+        # Recombine sentences with their delimiters
+        combined_sentences = []
+        for i in range(0, len(sentences) - 1, 2):
+            if i + 1 < len(sentences):
+                combined_sentences.append(sentences[i] + sentences[i + 1])
+            else:
+                combined_sentences.append(sentences[i])
+
+        # Group sentences into chunks
+        chunks = []
+        current_chunk = ""
+
+        for sentence in combined_sentences:
+            if len(current_chunk) + len(sentence) <= max_chunk_size:
+                current_chunk += sentence
+            else:
+                if current_chunk:
+                    chunks.append(current_chunk)
+                current_chunk = sentence
+
+        if current_chunk:
+            chunks.append(current_chunk)
+
+        logger.info(f"Split text ({len(text)} chars) into {len(chunks)} chunks")
+        return chunks
+
     def synthesize(
         self,
         text: str,
@@ -139,10 +187,17 @@ class Qwen3TTSService:
 
             logger.info(
                 f"Synthesizing: text_length={len(text)}, speaker={speaker}, "
-                f"language={language}, speed={speed}"
+                f"language={language}, speed={speed}, chunking={'enabled' if self.chunk_size > 0 else 'disabled'}"
             )
 
-            # Generate speech
+            # Check if text needs chunking
+            if self.chunk_size > 0 and len(text) > self.chunk_size:
+                logger.info(
+                    f"Text exceeds chunk size ({len(text)} > {self.chunk_size}), using chunked synthesis"
+                )
+                return self._synthesize_chunked(text, speaker, language, response_format, speed)
+
+            # Generate speech for single chunk
             # Qwen3-TTS returns (wavs_list, sample_rate) where wavs_list is a list of numpy arrays
             wavs, sample_rate = self.model.generate_custom_voice(
                 text=text,
@@ -173,6 +228,73 @@ class Qwen3TTSService:
         except Exception as e:
             logger.error(f"Synthesis failed: {e}", exc_info=True)
             raise
+
+    def _synthesize_chunked(
+        self,
+        text: str,
+        speaker: str,
+        language: str,
+        response_format: str,
+        speed: float,
+    ) -> bytes:
+        """
+        Synthesize long text by splitting into chunks
+
+        Args:
+            text: Long text to synthesize
+            speaker: Speaker name
+            language: Language code
+            response_format: Output format
+            speed: Speech speed
+
+        Returns:
+            Combined audio bytes
+        """
+        # Split text into chunks
+        chunks = self._split_text_into_chunks(text, self.chunk_size)
+
+        # Synthesize each chunk
+        audio_chunks = []
+        sample_rate = None
+
+        for i, chunk in enumerate(chunks):
+            logger.info(f"Synthesizing chunk {i + 1}/{len(chunks)}: {len(chunk)} chars")
+
+            # Generate speech for this chunk
+            wavs, sr = self.model.generate_custom_voice(
+                text=chunk,
+                speaker=speaker,
+                language=language,
+            )
+
+            # Get audio data
+            audio_data = wavs[0] if isinstance(wavs, list) else wavs
+
+            # Apply speed adjustment if needed
+            if speed != 1.0:
+                try:
+                    import librosa
+
+                    audio_data = librosa.effects.time_stretch(audio_data, rate=speed)
+                except ImportError:
+                    pass
+
+            audio_chunks.append(audio_data)
+            if sample_rate is None:
+                sample_rate = sr
+
+        # Concatenate all audio chunks
+        logger.info(f"Concatenating {len(audio_chunks)} audio chunks")
+        combined_audio = np.concatenate(audio_chunks)
+
+        # Convert to bytes (sample_rate should be set from first chunk)
+        if sample_rate is None:
+            raise RuntimeError("Failed to get sample rate from audio chunks")
+
+        audio_bytes = self._audio_to_bytes(combined_audio, sample_rate, response_format)
+
+        logger.info(f"Chunked synthesis completed: {len(audio_bytes)} bytes")
+        return audio_bytes
 
     def _audio_to_bytes(self, audio_data, sample_rate: int, format: str = "wav") -> bytes:
         """

@@ -27,6 +27,14 @@ class Settings(BaseSettings):
     )
     qwen_tts_device: str = Field(default="cuda:0", description="Device (cpu/cuda:0)")
     qwen_tts_speaker: str = Field(default="female_calm", description="Default speaker")
+    qwen_tts_chunk_size: int = Field(
+        default=200,
+        description="Max characters per chunk for long text synthesis (0 = no chunking)",
+    )
+    qwen_tts_use_fp16: bool = Field(
+        default=False,
+        description="Use FP16 half precision (note: TTS uses bfloat16 by default)",
+    )
 
     # HuggingFace
     hf_endpoint: str = Field(
