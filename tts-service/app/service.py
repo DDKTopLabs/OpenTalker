@@ -181,9 +181,28 @@ class Qwen3TTSService:
             if language is None:
                 # Simple language detection based on text
                 if any("\u4e00" <= char <= "\u9fff" for char in text):
-                    language = "zh"
+                    language = "chinese"
                 else:
-                    language = "en"
+                    language = "english"
+
+            # Map common language codes to qwen_tts format
+            language_map = {
+                "zh": "chinese",
+                "zh-CN": "chinese",
+                "zh-TW": "chinese",
+                "en": "english",
+                "en-US": "english",
+                "en-GB": "english",
+                "ja": "japanese",
+                "ko": "korean",
+                "fr": "french",
+                "de": "german",
+                "es": "spanish",
+                "it": "italian",
+                "pt": "portuguese",
+                "ru": "russian",
+            }
+            language = language_map.get(language, language)
 
             logger.info(
                 f"Synthesizing: text_length={len(text)}, speaker={speaker}, "
